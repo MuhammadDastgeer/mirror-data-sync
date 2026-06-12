@@ -35,7 +35,7 @@ export function RightPanel({
   const next = () => setCursor((c) => (c.m === 11 ? { y: c.y + 1, m: 0 } : { y: c.y, m: c.m + 1 }));
 
   return (
-    <aside className="hidden xl:flex w-72 shrink-0 flex-col gap-6 border-l border-border bg-background px-5 py-6">
+    <aside className="hidden xl:flex w-72 shrink-0 flex-col gap-6 border-l border-border bg-background px-5 py-6 h-full overflow-y-auto">
       {/* Date / calendar */}
       <div>
         <div className="text-[11px] font-bold tracking-wider text-muted-foreground">DATE</div>
@@ -81,7 +81,7 @@ export function RightPanel({
       </div>
 
       {/* Today's summary */}
-      <div>
+      <div className="mt-auto">
         <div className="mb-3 text-sm font-semibold">Today's Summary</div>
         <div className="divide-y divide-border rounded-lg border border-border bg-card">
           <Row label="Follow-ups" value={String(summary.followUps)} />
