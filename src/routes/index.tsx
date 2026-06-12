@@ -28,15 +28,19 @@ function Dashboard() {
   useEffect(() => setMounted(true), []);
 
   return (
-    <div className="flex min-h-screen w-full bg-background">
+    <div className="flex h-screen w-full overflow-hidden bg-background">
       <AppSidebar />
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <Topbar />
-        <div className="flex min-w-0 flex-1">
-          <main className="min-w-0 flex-1 px-6 py-6 space-y-5">
+        <div className="flex min-w-0 flex-1 overflow-hidden">
+          <main className="min-w-0 flex-1 overflow-y-auto px-6 py-6 space-y-5">
             {mounted ? <DashboardInner /> : <DashboardSkeleton />}
           </main>
-          {mounted && <RightPanelLive />}
+          {mounted && (
+            <div className="hidden xl:block h-full overflow-y-auto">
+              <RightPanelLive />
+            </div>
+          )}
         </div>
       </div>
     </div>
