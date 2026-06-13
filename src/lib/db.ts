@@ -3,7 +3,7 @@
 import initSqlJs, { type Database } from "sql.js";
 import sqlWasmUrl from "sql.js/dist/sql-wasm.wasm?url";
 
-const STORAGE_KEY = "hospital_admin_sqlite_v1";
+const STORAGE_KEY = "hospital_admin_sqlite_v2";
 
 let dbPromise: Promise<Database> | null = null;
 
@@ -34,8 +34,18 @@ CREATE TABLE IF NOT EXISTS appointments (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   patient_id INTEGER,
   doctor_id INTEGER,
+  patient_name TEXT,
+  patient_phone TEXT,
+  doctor_name TEXT,
+  department TEXT,
+  type TEXT,
+  reason TEXT,
   scheduled_at TEXT NOT NULL,
-  status TEXT NOT NULL DEFAULT 'scheduled', -- scheduled|confirmed|completed|cancelled
+  scheduled_time TEXT,
+  status TEXT NOT NULL DEFAULT 'scheduled', -- scheduled|confirmed|completed|cancelled|pending
+  is_follow_up INTEGER NOT NULL DEFAULT 0,
+  follow_up_date TEXT,
+  follow_up_status TEXT, -- pending|overdue|completed
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE TABLE IF NOT EXISTS bills (
