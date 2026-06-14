@@ -3,7 +3,7 @@
 import initSqlJs, { type Database } from "sql.js";
 import sqlWasmUrl from "sql.js/dist/sql-wasm.wasm?url";
 
-const STORAGE_KEY = "hospital_admin_sqlite_v4";
+const STORAGE_KEY = "hospital_admin_sqlite_v5";
 
 let dbPromise: Promise<Database> | null = null;
 
@@ -14,10 +14,18 @@ CREATE TABLE IF NOT EXISTS doctors (
   specialty TEXT,
   department TEXT,
   email TEXT,
+  password TEXT,
   phone TEXT,
+  gender TEXT,
+  dob TEXT,
+  blood_group TEXT,
+  address TEXT,
   qualification TEXT,
   experience_years INTEGER,
+  registration_no TEXT,
+  license_no TEXT,
   fee REAL NOT NULL DEFAULT 0,
+  follow_up_fee REAL NOT NULL DEFAULT 0,
   available_to_book INTEGER NOT NULL DEFAULT 1,
   portal_sent INTEGER NOT NULL DEFAULT 0,
   active INTEGER NOT NULL DEFAULT 1,
