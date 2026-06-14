@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import {
-  Stethoscope, BarChart3, Filter, Search, Download, Send, Plus, X,
-  UserRound, CheckCircle2, BookOpen, Send as SendIcon, Building2,
-  CalendarCheck, IndianRupee, Activity, Users, ChevronRight, Pencil, Trash2, Eye,
+  Stethoscope, BarChart3, Filter, Search, Download, Send, Plus, ArrowLeft,
+  UserRound, CheckCircle2, Send as SendIcon, Building2, CalendarCheck, IndianRupee,
+  Activity, Users, ChevronRight, Pencil, Trash2, Eye, X, User, Briefcase, DollarSign,
+  Stethoscope as StethIcon,
 } from "lucide-react";
 import { AppSidebar } from "@/components/app-sidebar";
 import { Topbar } from "@/components/dashboard/topbar";
@@ -25,16 +26,26 @@ type Doctor = {
   specialty: string | null;
   department: string | null;
   email: string | null;
+  password: string | null;
   phone: string | null;
+  gender: string | null;
+  dob: string | null;
+  blood_group: string | null;
+  address: string | null;
   qualification: string | null;
   experience_years: number | null;
+  registration_no: string | null;
+  license_no: string | null;
   fee: number;
+  follow_up_fee: number;
   available_to_book: number;
   portal_sent: number;
   active: number;
   on_duty: number;
   created_at: string;
 };
+
+type Mode = { kind: "list" } | { kind: "form"; editing?: Doctor };
 
 function DoctorsPage() {
   const [mounted, setMounted] = useState(false);
@@ -56,8 +67,7 @@ function DoctorsInner() {
   const [tab, setTab] = useState<"doctors" | "overview">("doctors");
   const [rows, setRows] = useState<Doctor[]>([]);
   const [tick, setTick] = useState(0);
-  const [showAdd, setShowAdd] = useState(false);
-  const [editing, setEditing] = useState<Doctor | null>(null);
+  const [mode, setMode] = useState<Mode>({ kind: "list" });
   const [viewing, setViewing] = useState<Doctor | null>(null);
 
   useEffect(() => {
@@ -65,9 +75,18 @@ function DoctorsInner() {
   }, [tick]);
   const refresh = () => setTick((t) => t + 1);
 
+  if (mode.kind === "form") {
+    return (
+      <DoctorForm
+        initial={mode.editing}
+        onCancel={() => setMode({ kind: "list" })}
+        onSaved={() => { setMode({ kind: "list" }); refresh(); }}
+      />
+    );
+  }
+
   return (
     <div className="space-y-5">
-      {/* Tabs */}
       <div className="inline-flex items-center gap-2 rounded-xl bg-card p-1 shadow-sm border border-border">
         <button
           onClick={() => setTab("doctors")}
@@ -90,9 +109,9 @@ function DoctorsInner() {
       {tab === "doctors" ? (
         <DoctorsTab
           rows={rows}
-          onAdd={() => setShowAdd(true)}
+          onAdd={() => setMode({ kind: "form" })}
           onView={(d) => setViewing(d)}
-          onEdit={(d) => setEditing(d)}
+          onEdit={(d) => setMode({ kind: "form", editing: d })}
           onDelete={async (id) => {
             if (!confirm("Delete this doctor?")) return;
             await exec("DELETE FROM doctors WHERE id=?", [id]);
@@ -100,17 +119,15 @@ function DoctorsInner() {
           }}
         />
       ) : (
-        <OverviewTab rows={rows} onAdd={() => setShowAdd(true)} onGoDoctors={() => setTab("doctors")} />
+        <OverviewTab rows={rows} onAdd={() => setMode({ kind: "form" })} onGoDoctors={() => setTab("doctors")} />
       )}
 
-      {showAdd ? <DoctorDialog onClose={() => setShowAdd(false)} onSaved={() => { setShowAdd(false); refresh(); }} /> : null}
-      {editing ? <DoctorDialog initial={editing} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); refresh(); }} /> : null}
       {viewing ? <ViewDialog doctor={viewing} onClose={() => setViewing(null)} /> : null}
     </div>
   );
 }
 
-/* ============ DOCTORS TAB ============ */
+/* ============ DOCTORS TAB (LIST) ============ */
 function DoctorsTab({
   rows, onAdd, onView, onEdit, onDelete,
 }: {
@@ -177,6 +194,7 @@ function DoctorsTab({
                   <th className="px-4 py-3 text-left">Name</th>
                   <th className="px-4 py-3 text-left">Specialty</th>
                   <th className="px-4 py-3 text-left">Department</th>
+                  <th className="px-4 py-3 text-left">Email</th>
                   <th className="px-4 py-3 text-left">Phone</th>
                   <th className="px-4 py-3 text-left">Fee</th>
                   <th className="px-4 py-3 text-left">Status</th>
@@ -185,10 +203,15 @@ function DoctorsTab({
               </thead>
               <tbody>
                 {filtered.map((d) => (
-                  <tr key={d.id} className="border-t border-border hover:bg-muted/40">
+                  <tr
+                    key={d.id}
+                    className="border-t border-border hover:bg-muted/40 cursor-pointer"
+                    onClick={() => onView(d)}
+                  >
                     <td className="px-4 py-3 font-medium">{d.name}</td>
                     <td className="px-4 py-3 text-muted-foreground">{d.specialty ?? "-"}</td>
                     <td className="px-4 py-3 text-muted-foreground">{d.department ?? "-"}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{d.email ?? "-"}</td>
                     <td className="px-4 py-3 text-muted-foreground">{d.phone ?? "-"}</td>
                     <td className="px-4 py-3">₹{d.fee.toLocaleString()}</td>
                     <td className="px-4 py-3">
@@ -198,7 +221,7 @@ function DoctorsTab({
                         {d.active ? "Active" : "Inactive"}
                       </span>
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-1">
                         <button onClick={() => onView(d)} className="rounded-md p-1.5 hover:bg-muted" title="View">
                           <Eye className="size-4" />
@@ -252,7 +275,6 @@ function OverviewTab({ rows, onAdd, onGoDoctors }: { rows: Doctor[]; onAdd: () =
         Summary of doctor distribution, department breakdown, on-duty stats, and recent additions
       </p>
 
-      {/* Doctors Overview header card */}
       <section className="rounded-2xl bg-card border border-border shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
           <div className="flex items-center gap-3">
@@ -280,7 +302,6 @@ function OverviewTab({ rows, onAdd, onGoDoctors }: { rows: Doctor[]; onAdd: () =
         </div>
       </section>
 
-      {/* KPI cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard tint="purple" icon={<UserRound className="size-5" />} value={total} label="Total Doctors" />
         <KpiCard tint="teal" icon={<Users className="size-5" />} value={active} label="Active Doctors" />
@@ -288,7 +309,6 @@ function OverviewTab({ rows, onAdd, onGoDoctors }: { rows: Doctor[]; onAdd: () =
         <KpiCard tint="orange" icon={<SendIcon className="size-5" />} value={portal} label="Portal Access Sent" />
       </div>
 
-      {/* By department + recently added */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <section className="rounded-2xl bg-card border border-border shadow-sm">
           <header className="flex items-center justify-between px-5 py-4 border-b border-border">
@@ -352,7 +372,6 @@ function OverviewTab({ rows, onAdd, onGoDoctors }: { rows: Doctor[]; onAdd: () =
         </section>
       </div>
 
-      {/* Doctors on duty today */}
       <section className="rounded-2xl bg-card border border-border shadow-sm">
         <header className="flex items-center justify-between px-5 py-4 border-b border-border">
           <div>
@@ -382,7 +401,6 @@ function OverviewTab({ rows, onAdd, onGoDoctors }: { rows: Doctor[]; onAdd: () =
         </div>
       </section>
 
-      {/* Fee Structure Overview */}
       <section className="rounded-2xl bg-card border border-border shadow-sm">
         <header className="px-5 py-4 border-b border-border">
           <h3 className="text-sm font-bold">Fee Structure Overview</h3>
@@ -395,7 +413,6 @@ function OverviewTab({ rows, onAdd, onGoDoctors }: { rows: Doctor[]; onAdd: () =
         </div>
       </section>
 
-      {/* Action cards */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <ActionCard
           gradient="from-status-purple-fg to-status-purple-fg/70"
@@ -426,7 +443,304 @@ function OverviewTab({ rows, onAdd, onGoDoctors }: { rows: Doctor[]; onAdd: () =
   );
 }
 
-/* ============ small UI bits ============ */
+/* ============ FULL-PAGE FORM ============ */
+const DEPARTMENTS = [
+  "Cardiology", "Neurology", "Orthopedics", "Pediatrics", "Gynecology",
+  "Dermatology", "ENT", "Ophthalmology", "Psychiatry", "Radiology",
+  "Oncology", "General Medicine", "General Surgery", "Urology", "Dental",
+];
+const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
+
+function DoctorForm({
+  initial, onCancel, onSaved,
+}: { initial?: Doctor; onCancel: () => void; onSaved: () => void }) {
+  const [name, setName] = useState(initial?.name ?? "");
+  const [email, setEmail] = useState(initial?.email ?? "");
+  const [password, setPassword] = useState(initial?.password ?? "");
+  const [phone, setPhone] = useState(initial?.phone ?? "");
+  const [gender, setGender] = useState(initial?.gender ?? "");
+  const [dob, setDob] = useState(initial?.dob ?? "");
+  const [bloodGroup, setBloodGroup] = useState(initial?.blood_group ?? "");
+  const [address, setAddress] = useState(initial?.address ?? "");
+
+  const [specialty, setSpecialty] = useState(initial?.specialty ?? "");
+  const [qualification, setQualification] = useState(initial?.qualification ?? "");
+  const [experience, setExperience] = useState<number | "">(initial?.experience_years ?? 0);
+  const [registrationNo, setRegistrationNo] = useState(initial?.registration_no ?? "");
+  const [licenseNo, setLicenseNo] = useState(initial?.license_no ?? "");
+
+  const [department, setDepartment] = useState(initial?.department ?? "");
+  const [fee, setFee] = useState<number | "">(initial?.fee ?? 0);
+  const [followUpFee, setFollowUpFee] = useState<number | "">(initial?.follow_up_fee ?? "");
+
+  const [active, setActive] = useState(initial ? !!initial.active : true);
+  const [available, setAvailable] = useState(initial ? !!initial.available_to_book : true);
+
+  const [saving, setSaving] = useState(false);
+
+  const save = async () => {
+    if (!name.trim()) return alert("Full name is required");
+    if (!email.trim()) return alert("Email is required");
+    if (!initial && !password.trim()) return alert("Password is required");
+    if (fee === "" || Number(fee) < 0) return alert("Consultation fee is required");
+    setSaving(true);
+    try {
+      if (initial) {
+        await exec(
+          `UPDATE doctors SET name=?, email=?, password=?, phone=?, gender=?, dob=?, blood_group=?, address=?,
+            specialty=?, qualification=?, experience_years=?, registration_no=?, license_no=?,
+            department=?, fee=?, follow_up_fee=?, active=?, available_to_book=? WHERE id=?`,
+          [name, email, password || initial.password, phone, gender, dob, bloodGroup, address,
+            specialty, qualification, experience === "" ? null : experience, registrationNo, licenseNo,
+            department, Number(fee) || 0, followUpFee === "" ? 0 : Number(followUpFee),
+            active ? 1 : 0, available ? 1 : 0, initial.id],
+        );
+      } else {
+        await exec(
+          `INSERT INTO doctors (name, email, password, phone, gender, dob, blood_group, address,
+            specialty, qualification, experience_years, registration_no, license_no,
+            department, fee, follow_up_fee, active, available_to_book)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [name, email, password, phone, gender, dob, bloodGroup, address,
+            specialty, qualification, experience === "" ? null : experience, registrationNo, licenseNo,
+            department, Number(fee) || 0, followUpFee === "" ? 0 : Number(followUpFee),
+            active ? 1 : 0, available ? 1 : 0],
+        );
+      }
+      onSaved();
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="space-y-5">
+      {/* Page header */}
+      <div className="flex flex-wrap items-center gap-4">
+        <button
+          onClick={onCancel}
+          className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm font-semibold hover:bg-muted"
+        >
+          <ArrowLeft className="size-4" /> Back to Doctors
+        </button>
+        <div>
+          <h1 className="text-2xl font-bold">{initial ? "Edit Doctor" : "Add New Doctor"}</h1>
+          <p className="text-sm text-muted-foreground">Fill in all required information below</p>
+        </div>
+      </div>
+
+      {/* Basic Information */}
+      <Section
+        iconBg="bg-accent text-accent-foreground"
+        icon={<User className="size-4" />}
+        title="Basic Information"
+      >
+        <Grid2>
+          <Field label="FULL NAME" required>
+            <input className={inp} placeholder="Dr. John Smith" value={name} onChange={(e) => setName(e.target.value)} />
+          </Field>
+          <Field label="EMAIL ADDRESS" required>
+            <input type="email" className={inp} placeholder="doctor@hospital.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+          </Field>
+          <Field label="PASSWORD" required={!initial}>
+            <input
+              type="password"
+              className={inp}
+              placeholder={initial ? "Leave blank to keep current" : "Set a login password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </Field>
+          <Field label="PHONE NUMBER">
+            <input className={inp} placeholder="+91 9876543210" value={phone} onChange={(e) => setPhone(e.target.value)} />
+          </Field>
+          <Field label="GENDER">
+            <select className={inp} value={gender} onChange={(e) => setGender(e.target.value)}>
+              <option value="">Select Gender</option>
+              <option>Male</option>
+              <option>Female</option>
+              <option>Other</option>
+            </select>
+          </Field>
+          <Field label="DATE OF BIRTH">
+            <input type="date" className={inp} value={dob} onChange={(e) => setDob(e.target.value)} />
+          </Field>
+          <Field label="BLOOD GROUP">
+            <select className={inp} value={bloodGroup} onChange={(e) => setBloodGroup(e.target.value)}>
+              <option value="">Select...</option>
+              {BLOOD_GROUPS.map((b) => <option key={b}>{b}</option>)}
+            </select>
+          </Field>
+        </Grid2>
+        <Field label="ADDRESS">
+          <textarea
+            rows={3}
+            className={inp}
+            placeholder="Full address..."
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+          />
+        </Field>
+      </Section>
+
+      {/* Professional Information */}
+      <Section
+        iconBg="bg-status-purple/60 text-status-purple-fg"
+        icon={<Briefcase className="size-4" />}
+        title="Professional Information"
+      >
+        <Grid2>
+          <Field label="SPECIALIZATION">
+            <input className={inp} placeholder="e.g. Cardiology, Ortho" value={specialty} onChange={(e) => setSpecialty(e.target.value)} />
+          </Field>
+          <Field label="QUALIFICATION">
+            <input className={inp} placeholder="e.g. MBBS, MD, MS" value={qualification} onChange={(e) => setQualification(e.target.value)} />
+          </Field>
+          <Field label="EXPERIENCE (YEARS)">
+            <input
+              type="number" min={0}
+              className={inp}
+              value={experience}
+              onChange={(e) => setExperience(e.target.value === "" ? "" : Number(e.target.value))}
+            />
+          </Field>
+          <Field label="MEDICAL REGISTRATION NO.">
+            <input className={inp} placeholder="e.g. MCI-12345" value={registrationNo} onChange={(e) => setRegistrationNo(e.target.value)} />
+          </Field>
+          <Field label="LICENSE NUMBER">
+            <input className={inp} placeholder="e.g. LIC-67890" value={licenseNo} onChange={(e) => setLicenseNo(e.target.value)} />
+          </Field>
+        </Grid2>
+      </Section>
+
+      {/* Department & Fees */}
+      <Section
+        iconBg="bg-status-green/60 text-status-green-fg"
+        icon={<DollarSign className="size-4" />}
+        title="Department & Fees"
+      >
+        <Field label="DEPARTMENT">
+          <select className={inp} value={department} onChange={(e) => setDepartment(e.target.value)}>
+            <option value="">— Select Department —</option>
+            {DEPARTMENTS.map((d) => <option key={d}>{d}</option>)}
+          </select>
+        </Field>
+        <Grid2>
+          <Field label="CONSULTATION FEE (₹)" required>
+            <input
+              type="number" min={0}
+              className={inp}
+              value={fee}
+              onChange={(e) => setFee(e.target.value === "" ? "" : Number(e.target.value))}
+            />
+          </Field>
+          <Field label="FOLLOW-UP FEE (₹)">
+            <input
+              type="number" min={0}
+              className={inp}
+              placeholder="300"
+              value={followUpFee}
+              onChange={(e) => setFollowUpFee(e.target.value === "" ? "" : Number(e.target.value))}
+            />
+          </Field>
+        </Grid2>
+      </Section>
+
+      {/* Status Settings */}
+      <Section
+        iconBg="bg-status-red/60 text-status-red-fg"
+        icon={<StethIcon className="size-4" />}
+        title="Status Settings"
+      >
+        <ToggleRow
+          title="Active Status"
+          desc="Doctor can accept and manage appointments"
+          checked={active}
+          onChange={setActive}
+        />
+        <ToggleRow
+          title="Available for Booking"
+          desc="Show in available list for new bookings"
+          checked={available}
+          onChange={setAvailable}
+        />
+      </Section>
+
+      {/* Footer actions */}
+      <div className="sticky bottom-0 -mx-6 flex items-center justify-end gap-2 border-t border-border bg-card px-6 py-3">
+        <button
+          onClick={onCancel}
+          className="rounded-lg border border-border bg-background px-5 py-2 text-sm font-semibold hover:bg-muted"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={save}
+          disabled={saving}
+          className="rounded-lg bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-60"
+        >
+          {saving ? "Saving..." : initial ? "Save Changes" : "Add Doctor"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ============ Form helpers ============ */
+function Section({
+  icon, iconBg, title, children,
+}: { icon: React.ReactNode; iconBg: string; title: string; children: React.ReactNode }) {
+  return (
+    <section className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
+      <header className="flex items-center gap-3 border-b border-border bg-muted/40 px-5 py-3">
+        <div className={`grid size-8 place-items-center rounded-lg ${iconBg}`}>{icon}</div>
+        <h3 className="text-base font-bold">{title}</h3>
+      </header>
+      <div className="space-y-4 p-5">{children}</div>
+    </section>
+  );
+}
+function Grid2({ children }: { children: React.ReactNode }) {
+  return <div className="grid grid-cols-1 gap-4 md:grid-cols-2">{children}</div>;
+}
+function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-xs font-bold tracking-wider text-muted-foreground">
+        {label}{required ? <span className="text-status-red-fg"> *</span> : null}
+      </span>
+      {children}
+    </label>
+  );
+}
+function ToggleRow({
+  title, desc, checked, onChange,
+}: { title: string; desc: string; checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <div className="flex items-center justify-between rounded-xl border border-border bg-background px-4 py-3">
+      <div>
+        <div className="text-sm font-bold">{title}</div>
+        <div className="text-xs text-muted-foreground">{desc}</div>
+      </div>
+      <button
+        type="button"
+        onClick={() => onChange(!checked)}
+        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+          checked ? "bg-primary" : "bg-muted"
+        }`}
+      >
+        <span
+          className={`inline-block size-5 transform rounded-full bg-white shadow transition-transform ${
+            checked ? "translate-x-5" : "translate-x-0.5"
+          }`}
+        />
+      </button>
+    </div>
+  );
+}
+const inp = "w-full rounded-lg border border-border bg-muted/40 px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring focus:bg-background";
+
+/* ============ small UI bits (Overview) ============ */
 function KpiCard({
   tint, icon, value, label,
 }: { tint: "purple" | "teal" | "green" | "orange"; icon: React.ReactNode; value: number | string; label: string }) {
@@ -443,7 +757,6 @@ function KpiCard({
     </div>
   );
 }
-
 function FeeCard({
   tint, icon, value, label,
 }: { tint: "purple" | "green" | "orange"; icon: React.ReactNode; value: number; label: string }) {
@@ -459,7 +772,6 @@ function FeeCard({
     </div>
   );
 }
-
 function ActionCard({
   gradient, icon, title, desc, cta, onClick,
 }: { gradient: string; icon: React.ReactNode; title: string; desc: string; cta: string; onClick: () => void }) {
@@ -486,124 +798,42 @@ function ActionCard({
   );
 }
 
-/* ============ Dialogs ============ */
-function DoctorDialog({
-  initial, onClose, onSaved,
-}: { initial?: Doctor; onClose: () => void; onSaved: () => void }) {
-  const [name, setName] = useState(initial?.name ?? "");
-  const [specialty, setSpecialty] = useState(initial?.specialty ?? "");
-  const [department, setDepartment] = useState(initial?.department ?? "");
-  const [email, setEmail] = useState(initial?.email ?? "");
-  const [phone, setPhone] = useState(initial?.phone ?? "");
-  const [qualification, setQualification] = useState(initial?.qualification ?? "");
-  const [experience, setExperience] = useState<number | "">(initial?.experience_years ?? "");
-  const [fee, setFee] = useState<number | "">(initial?.fee ?? "");
-  const [available, setAvailable] = useState(initial ? !!initial.available_to_book : true);
-  const [active, setActive] = useState(initial ? !!initial.active : true);
-  const [onDuty, setOnDuty] = useState(initial ? !!initial.on_duty : false);
-
-  const save = async () => {
-    if (!name.trim()) return alert("Name is required");
-    if (initial) {
-      await exec(
-        `UPDATE doctors SET name=?, specialty=?, department=?, email=?, phone=?, qualification=?,
-          experience_years=?, fee=?, available_to_book=?, active=?, on_duty=? WHERE id=?`,
-        [name, specialty, department, email, phone, qualification,
-          experience === "" ? null : experience, fee === "" ? 0 : fee,
-          available ? 1 : 0, active ? 1 : 0, onDuty ? 1 : 0, initial.id],
-      );
-    } else {
-      await exec(
-        `INSERT INTO doctors (name, specialty, department, email, phone, qualification, experience_years, fee, available_to_book, active, on_duty)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [name, specialty, department, email, phone, qualification,
-          experience === "" ? null : experience, fee === "" ? 0 : fee,
-          available ? 1 : 0, active ? 1 : 0, onDuty ? 1 : 0],
-      );
-    }
-    onSaved();
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4">
-      <div className="w-full max-w-2xl rounded-2xl bg-card shadow-xl border border-border">
-        <div className="flex items-center justify-between border-b border-border px-5 py-3">
-          <h3 className="text-base font-bold">{initial ? "Edit Doctor" : "Add Doctor"}</h3>
-          <button onClick={onClose} className="rounded-md p-1 hover:bg-muted"><X className="size-4" /></button>
-        </div>
-        <div className="grid grid-cols-1 gap-3 p-5 sm:grid-cols-2">
-          <Field label="Name *"><input className={inp} value={name} onChange={(e) => setName(e.target.value)} /></Field>
-          <Field label="Specialty"><input className={inp} value={specialty} onChange={(e) => setSpecialty(e.target.value)} /></Field>
-          <Field label="Department"><input className={inp} value={department} onChange={(e) => setDepartment(e.target.value)} /></Field>
-          <Field label="Qualification"><input className={inp} value={qualification} onChange={(e) => setQualification(e.target.value)} /></Field>
-          <Field label="Email"><input className={inp} value={email} onChange={(e) => setEmail(e.target.value)} /></Field>
-          <Field label="Phone"><input className={inp} value={phone} onChange={(e) => setPhone(e.target.value)} /></Field>
-          <Field label="Experience (years)">
-            <input type="number" className={inp} value={experience} onChange={(e) => setExperience(e.target.value === "" ? "" : Number(e.target.value))} />
-          </Field>
-          <Field label="Consultation Fee (₹)">
-            <input type="number" className={inp} value={fee} onChange={(e) => setFee(e.target.value === "" ? "" : Number(e.target.value))} />
-          </Field>
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} /> Active
-          </label>
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={available} onChange={(e) => setAvailable(e.target.checked)} /> Available to Book
-          </label>
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={onDuty} onChange={(e) => setOnDuty(e.target.checked)} /> On Duty Today
-          </label>
-        </div>
-        <div className="flex items-center justify-end gap-2 border-t border-border px-5 py-3">
-          <button onClick={onClose} className="rounded-lg border border-border px-4 py-2 text-sm hover:bg-muted">Cancel</button>
-          <button onClick={save} className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90">
-            {initial ? "Save Changes" : "Add Doctor"}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
+/* ============ View dialog ============ */
 function ViewDialog({ doctor, onClose }: { doctor: Doctor; onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4">
-      <div className="w-full max-w-lg rounded-2xl bg-card shadow-xl border border-border">
+      <div className="w-full max-w-2xl rounded-2xl bg-card shadow-xl border border-border max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between border-b border-border px-5 py-3">
           <h3 className="text-base font-bold">{doctor.name}</h3>
           <button onClick={onClose} className="rounded-md p-1 hover:bg-muted"><X className="size-4" /></button>
         </div>
         <div className="grid grid-cols-2 gap-3 p-5 text-sm">
-          <Info k="Specialty" v={doctor.specialty} />
-          <Info k="Department" v={doctor.department} />
           <Info k="Email" v={doctor.email} />
           <Info k="Phone" v={doctor.phone} />
+          <Info k="Gender" v={doctor.gender} />
+          <Info k="Date of Birth" v={doctor.dob} />
+          <Info k="Blood Group" v={doctor.blood_group} />
+          <Info k="Address" v={doctor.address} />
+          <Info k="Specialization" v={doctor.specialty} />
           <Info k="Qualification" v={doctor.qualification} />
           <Info k="Experience" v={doctor.experience_years ? `${doctor.experience_years} yrs` : null} />
-          <Info k="Fee" v={`₹${doctor.fee.toLocaleString()}`} />
+          <Info k="Registration No." v={doctor.registration_no} />
+          <Info k="License No." v={doctor.license_no} />
+          <Info k="Department" v={doctor.department} />
+          <Info k="Consultation Fee" v={`₹${doctor.fee.toLocaleString()}`} />
+          <Info k="Follow-up Fee" v={`₹${doctor.follow_up_fee.toLocaleString()}`} />
           <Info k="Status" v={doctor.active ? "Active" : "Inactive"} />
           <Info k="Available to Book" v={doctor.available_to_book ? "Yes" : "No"} />
-          <Info k="On Duty Today" v={doctor.on_duty ? "Yes" : "No"} />
         </div>
       </div>
     </div>
-  );
-}
-
-const inp = "w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring";
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <label className="block">
-      <span className="mb-1 block text-xs font-medium text-muted-foreground">{label}</span>
-      {children}
-    </label>
   );
 }
 function Info({ k, v }: { k: string; v: string | number | null }) {
   return (
     <div>
       <div className="text-xs text-muted-foreground">{k}</div>
-      <div className="font-medium">{v ?? "-"}</div>
+      <div className="font-medium break-words">{v || "-"}</div>
     </div>
   );
 }
