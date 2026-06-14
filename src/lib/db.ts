@@ -3,7 +3,7 @@
 import initSqlJs, { type Database } from "sql.js";
 import sqlWasmUrl from "sql.js/dist/sql-wasm.wasm?url";
 
-const STORAGE_KEY = "hospital_admin_sqlite_v3";
+const STORAGE_KEY = "hospital_admin_sqlite_v4";
 
 let dbPromise: Promise<Database> | null = null;
 
