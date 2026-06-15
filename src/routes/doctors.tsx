@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import {
   Stethoscope, BarChart3, Filter, Search, Download, Send, Plus, ArrowLeft,
@@ -247,6 +247,9 @@ function DoctorsTab({
 
 /* ============ OVERVIEW TAB ============ */
 function OverviewTab({ rows, onAdd, onGoDoctors }: { rows: Doctor[]; onAdd: () => void; onGoDoctors: () => void }) {
+  const navigate = useNavigate();
+  const goAppointments = () => navigate({ to: "/appointments" });
+  const goStaff = () => { window.location.href = "/staff"; };
   const total = rows.length;
   const active = rows.filter((r) => r.active).length;
   const available = rows.filter((r) => r.available_to_book).length;
@@ -295,7 +298,7 @@ function OverviewTab({ rows, onAdd, onGoDoctors }: { rows: Doctor[]; onAdd: () =
             >
               <Users className="size-4" /> Manage Doctors
             </button>
-            <button className="inline-flex items-center gap-2 rounded-lg border border-accent bg-accent px-3 py-2 text-sm font-semibold text-accent-foreground hover:opacity-90">
+            <button onClick={goAppointments} className="inline-flex items-center gap-2 rounded-lg border border-accent bg-accent px-3 py-2 text-sm font-semibold text-accent-foreground hover:opacity-90">
               <CalendarCheck className="size-4" /> Appointments
             </button>
           </div>
@@ -342,7 +345,7 @@ function OverviewTab({ rows, onAdd, onGoDoctors }: { rows: Doctor[]; onAdd: () =
               <h3 className="text-sm font-bold">Recently Added</h3>
               <p className="text-xs text-muted-foreground">Latest doctors onboarded</p>
             </div>
-            <button className="rounded-lg border border-status-purple bg-status-purple/40 px-3 py-1 text-xs font-semibold text-status-purple-fg">
+            <button onClick={onGoDoctors} className="rounded-lg border border-status-purple bg-status-purple/40 px-3 py-1 text-xs font-semibold text-status-purple-fg">
               View All
             </button>
           </header>
@@ -378,7 +381,7 @@ function OverviewTab({ rows, onAdd, onGoDoctors }: { rows: Doctor[]; onAdd: () =
             <h3 className="text-sm font-bold">Doctors on Duty Today</h3>
             <p className="text-xs text-muted-foreground">{onDuty.length} doctors with scheduled appointments</p>
           </div>
-          <button className="rounded-lg border border-status-cyan bg-status-cyan/40 px-3 py-1 text-xs font-semibold text-status-cyan-fg">
+          <button onClick={goAppointments} className="rounded-lg border border-status-cyan bg-status-cyan/40 px-3 py-1 text-xs font-semibold text-status-cyan-fg">
             View Appointments
           </button>
         </header>
@@ -428,7 +431,7 @@ function OverviewTab({ rows, onAdd, onGoDoctors }: { rows: Doctor[]; onAdd: () =
           title="Manage Staff"
           desc="View and manage all non-doctor hospital staff members"
           cta="Go to Staff"
-          onClick={() => {}}
+          onClick={goStaff}
         />
         <ActionCard
           gradient="from-status-mint-fg to-status-mint-fg/70"
@@ -436,7 +439,7 @@ function OverviewTab({ rows, onAdd, onGoDoctors }: { rows: Doctor[]; onAdd: () =
           title="View Appointments"
           desc="Check today's appointments and doctor schedules"
           cta="Appointments"
-          onClick={() => {}}
+          onClick={goAppointments}
         />
       </div>
     </div>
