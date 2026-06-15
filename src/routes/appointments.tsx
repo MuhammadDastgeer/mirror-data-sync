@@ -67,6 +67,7 @@ function AppointmentsInner() {
   const [showBook, setShowBook] = useState(false);
   const [editing, setEditing] = useState<Appt | null>(null);
   const [viewing, setViewing] = useState<Appt | null>(null);
+  const [searchQ, setSearchQ] = useState("");
 
   useEffect(() => {
     queryAll<Appt>("SELECT * FROM appointments ORDER BY id DESC").then(setRows).catch(() => setRows([]));
@@ -95,13 +96,15 @@ function AppointmentsInner() {
 
       {tab === "appointments" ? (
         <AppointmentsTab rows={rows} refresh={refresh} onOpenBook={() => setShowBook(true)}
-          onView={setViewing} onEdit={setEditing} />
+          onView={setViewing} onEdit={setEditing}
+          q={searchQ} setQ={setSearchQ} />
       ) : (
         <FollowUpsTab rows={rows} refresh={refresh} onView={setViewing} onEdit={setEditing} />
       )}
 
       {showBook && (
         <BookWizard
+          initialQuery={searchQ}
           onClose={() => setShowBook(false)}
           onSaved={() => { setShowBook(false); refresh(); }}
         />
@@ -131,16 +134,16 @@ function TabBtn({ active, onClick, icon, children }: { active: boolean; onClick:
 
 /* ============== Appointments Tab ============== */
 function AppointmentsTab({
-  rows, refresh, onOpenBook, onView, onEdit,
+  rows, refresh, onOpenBook, onView, onEdit, q, setQ,
 }: {
   rows: Appt[]; refresh: () => void; onOpenBook: () => void;
   onView: (a: Appt) => void; onEdit: (a: Appt) => void;
+  q: string; setQ: (v: string) => void;
 }) {
   const today = new Date().toISOString().slice(0, 10);
   const [date, setDate] = useState(today);
   const [showAll, setShowAll] = useState(false);
   const [status, setStatus] = useState("all");
-  const [q, setQ] = useState("");
   const [exportOpen, setExportOpen] = useState(false);
 
   const all = rows.filter((r) => r.is_follow_up === 0);
@@ -495,7 +498,7 @@ function EmptyState({ icon, title, sub }: { icon: React.ReactNode; title: string
 /* ============== Book Wizard (4 steps) ============== */
 type Step = 1 | 2 | 3 | 4;
 
-function BookWizard({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
+function BookWizard({ onClose, onSaved, initialQuery }: { onClose: () => void; onSaved: () => void; initialQuery?: string }) {
   const [step, setStep] = useState<Step>(1);
   const [patient, setPatient] = useState<Patient | null>(null);
   const [doctor, setDoctor] = useState<Doctor | null>(null);
@@ -549,7 +552,7 @@ function BookWizard({ onClose, onSaved }: { onClose: () => void; onSaved: () => 
     <Modal onClose={onClose} title={<><Zap className="size-5 text-primary" /> Quick Book Appointment</>}>
       <Stepper step={step} />
       <div className="mt-4">
-        {step === 1 && <StepPatient selected={patient} onSelect={setPatient} />}
+        {step === 1 && <StepPatient selected={patient} onSelect={setPatient} initialQuery={initialQuery} />}
         {step === 2 && <StepDoctor selected={doctor} onSelect={setDoctor} />}
         {step === 3 && <StepSchedule value={sched} onChange={setSched} />}
         {step === 4 && (
@@ -622,8 +625,8 @@ function Stepper({ step }: { step: Step }) {
 }
 
 /* --- Step 1: Patient --- */
-function StepPatient({ selected, onSelect }: { selected: Patient | null; onSelect: (p: Patient) => void }) {
-  const [q, setQ] = useState("");
+function StepPatient({ selected, onSelect, initialQuery }: { selected: Patient | null; onSelect: (p: Patient) => void; initialQuery?: string }) {
+  const [q, setQ] = useState(initialQuery ?? "");
   const [results, setResults] = useState<Patient[]>([]);
   const [showNew, setShowNew] = useState(false);
 
