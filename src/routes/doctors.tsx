@@ -248,8 +248,8 @@ function DoctorsTab({
 /* ============ OVERVIEW TAB ============ */
 function OverviewTab({ rows, onAdd, onGoDoctors }: { rows: Doctor[]; onAdd: () => void; onGoDoctors: () => void }) {
   const navigate = useNavigate();
-  const goAppointments = () => navigate({ to: "/appointments" as string as "/appointments" });
-  const goStaff = () => navigate({ to: "/staff" as unknown as "/appointments" });
+  const goAppointments = () => navigate({ to: "/appointments" });
+  const goStaff = () => { window.location.href = "/staff"; };
   const total = rows.length;
   const active = rows.filter((r) => r.active).length;
   const available = rows.filter((r) => r.available_to_book).length;
