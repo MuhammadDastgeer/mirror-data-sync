@@ -24,7 +24,8 @@ type Patient = {
   whatsapp: string | null; gender: string | null; age: number | null; created_at: string;
 };
 type Doctor = {
-  id: number; name: string; specialty: string | null; active: number; on_duty: number; created_at: string;
+  id: number; name: string; specialty: string | null; department: string | null;
+  active: number; on_duty: number; created_at: string;
 };
 type Appt = {
   id: number;
